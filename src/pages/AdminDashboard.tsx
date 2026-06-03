@@ -133,21 +133,61 @@ export const AdminDashboard: React.FC = () => {
     setExpandedOrderId(expandedOrderId === orderId ? null : orderId);
   };
 
-  const calculateTimeElapsed = (createdAtStr: string): string => {
-    const start = new Date(createdAtStr).getTime();
-    const mins = Math.max(0, Math.round((Date.now() - start) / 60000));
-    if (mins < 60) return `${mins}m ago`;
+  const calculateTimeElapsed = (order: Order): string => {
+    const assignedStep = order.timeline?.find(t => t.status === 'assigned');
+    const deliveredStep = order.timeline?.find(t => t.status === 'delivered');
+    const failedStep = order.timeline?.find(t => t.status === 'failed');
+
+    const start = assignedStep 
+      ? new Date(assignedStep.timestamp).getTime() 
+      : new Date(order.createdAt).getTime();
+
+    let end = Date.now();
+    if (deliveredStep) {
+      end = new Date(deliveredStep.timestamp).getTime();
+    } else if (failedStep) {
+      end = new Date(failedStep.timestamp).getTime();
+    }
+
+    const mins = Math.max(0, Math.round((end - start) / 60000));
+    if (mins < 60) return `${mins}m`;
     const hrs = Math.floor(mins / 60);
     const remMins = mins % 60;
-    return `${hrs}h ${remMins}m ago`;
+    return `${hrs}h ${remMins}m`;
   };
 
-  // Recharts Chart Formatting
-  const zoneChartData = adminStats?.zoneWiseSummary.map(z => ({
-    name: z.zone,
-    orders: z.totalOrders,
-    success: z.successRate,
-  })) || [];
+  // Dynamic Zone Chart Formatting from adminOrders
+  const definedZones = ['Downtown', 'West End', 'East Side', 'North', 'South'];
+  const zoneCounts: { [key: string]: { total: number; delivered: number; failed: number } } = {};
+  
+  definedZones.forEach(z => {
+    zoneCounts[z] = { total: 0, delivered: 0, failed: 0 };
+  });
+  zoneCounts['Others'] = { total: 0, delivered: 0, failed: 0 };
+
+  adminOrders.forEach((order) => {
+    let matchedZone = 'Others';
+    for (const z of definedZones) {
+      const regex = new RegExp(z, 'i');
+      if (regex.test(order.pickupAddress) || regex.test(order.dropAddress)) {
+        matchedZone = z;
+        break;
+      }
+    }
+    zoneCounts[matchedZone].total++;
+    if (order.status === 'delivered') zoneCounts[matchedZone].delivered++;
+    if (order.status === 'failed') zoneCounts[matchedZone].failed++;
+  });
+
+  const zoneChartData = Object.keys(zoneCounts).map(z => {
+    const finished = zoneCounts[z].delivered + zoneCounts[z].failed;
+    const successRate = finished > 0 ? Math.round((zoneCounts[z].delivered / finished) * 1000) / 10 : 0;
+    return {
+      name: z,
+      orders: zoneCounts[z].total,
+      success: successRate,
+    };
+  });
 
   // Clients computation combining registered clients and local order stats
   const clientsData = adminClients.map(client => {
@@ -487,7 +527,7 @@ export const AdminDashboard: React.FC = () => {
                                 </Badge>
                               </td>
                               <td className={`py-3.5 px-4 text-right text-xs text-slate-400 font-semibold ${textStyle}`}>
-                                {calculateTimeElapsed(order.createdAt)}
+                                {calculateTimeElapsed(order)}
                               </td>
                               <td className="py-3.5 px-2 text-slate-500">
                                 {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}

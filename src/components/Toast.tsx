@@ -26,7 +26,7 @@ export const Toast: React.FC = () => {
   };
 
   return (
-    <div className="fixed bottom-5 right-5 z-[100] flex items-center gap-3 px-5 py-4 rounded-2xl shadow-2xl border transition-all duration-300 animate-slide-in max-w-sm w-full bg-slate-900 border-slate-800 text-white">
+    <div className="fixed top-6 right-6 z-[100] flex items-center gap-3 px-5 py-4 rounded-2xl shadow-2xl border transition-all duration-300 animate-slide-in max-w-sm w-full bg-slate-900 border-slate-800 text-white">
       <div className="flex-shrink-0">
         {icons[toast.type]}
       </div>

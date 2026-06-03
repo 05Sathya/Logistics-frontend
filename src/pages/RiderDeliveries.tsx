@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
-import { Camera, MapPin, Navigation, ShieldCheck, LogOut } from 'lucide-react';
+import { Camera, MapPin, Navigation, ShieldCheck, LogOut, Star } from 'lucide-react';
 import { api } from '../services/api';
 import type { AppDispatch, RootState } from '../store/store';
 import { fetchRiderOrders, showToast } from '../store/logisticsSlice';
@@ -24,24 +24,34 @@ export const RiderDeliveries = () => {
   };
 
   useEffect(() => {
-    if (isOnline) {
-      dispatch(fetchRiderOrders());
-    }
+    dispatch(fetchRiderOrders());
 
     // Auto refresh when a new order is assigned to this rider
     socketService.on('order_assigned', () => {
-      if (isOnline) dispatch(fetchRiderOrders());
+      dispatch(fetchRiderOrders());
     });
     
     socketService.on('order_status_change', () => {
-      if (isOnline) dispatch(fetchRiderOrders());
+      dispatch(fetchRiderOrders());
     });
 
     return () => {
       socketService.off('order_assigned');
       socketService.off('order_status_change');
     };
-  }, [dispatch, isOnline]);
+  }, [dispatch]);
+
+  // Compute dynamic rating
+  let rating = 5.0;
+  if (riderOrders.length > 0 && riderOrders[0].assignedRider) {
+    const riderProfile = riderOrders[0].assignedRider;
+    const rDelivered = riderProfile.totalDelivered || 0;
+    const rFailed = riderProfile.totalFailed || 0;
+    const rTotal = rDelivered + rFailed;
+    if (rTotal > 0) {
+      rating = Math.round((rDelivered / rTotal) * 50) / 10;
+    }
+  }
 
   const toggleStatus = async () => {
     try {
@@ -72,10 +82,29 @@ export const RiderDeliveries = () => {
           <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
             <div>
               <p className="chip mb-3 border-slate-700 bg-slate-800 text-slate-200">Rider Portal</p>
-              <h1 className="text-3xl font-bold tracking-tight text-white sm:text-4xl">Welcome, {user?.name || 'Rider'}</h1>
+              <div className="flex items-center gap-3">
+                <h1 className="text-3xl font-bold tracking-tight text-white sm:text-4xl">Welcome, {user?.name || 'Rider'}</h1>
+                {riderOrders.length > 0 && (
+                  <div className="flex items-center gap-1.5 bg-slate-800/50 px-3 py-1.5 rounded-xl border border-slate-700">
+                    <Star className="w-4 h-4 text-amber-400 fill-amber-400" />
+                    <span className="text-sm font-bold text-amber-100">{rating.toFixed(1)}</span>
+                  </div>
+                )}
+              </div>
               <p className="mt-2 text-sm text-slate-300 sm:text-base">Track your active assignments, update delivery status, and stay responsive on the move.</p>
             </div>
-            <div className="flex items-center gap-3 self-start lg:self-auto">
+            <div className="flex flex-wrap items-center gap-3 self-start lg:self-auto">
+              <button
+                onClick={toggleStatus}
+                className={`flex items-center gap-2 px-4 py-2.5 text-sm font-semibold rounded-2xl transition-all duration-200 shadow-inner border ${
+                  isOnline 
+                    ? 'text-emerald-400 bg-emerald-500/10 hover:bg-emerald-500/20 border-emerald-500/20' 
+                    : 'text-slate-400 bg-slate-800/50 hover:bg-slate-800 border-slate-700'
+                }`}
+              >
+                <div className={`w-2 h-2 rounded-full ${isOnline ? 'bg-emerald-400 animate-pulse' : 'bg-slate-500'}`}></div>
+                {isOnline ? 'Go Offline' : 'Go Online'}
+              </button>
               <button onClick={() => setIsLogoutModalOpen(true)} className="flex items-center gap-2 px-4 py-2.5 text-sm font-semibold text-red-400 bg-red-500/10 hover:bg-red-500/20 rounded-2xl transition-colors border border-red-500/20 shadow-inner">
                 <LogOut className="w-4 h-4" />
                 Logout
@@ -98,17 +127,7 @@ export const RiderDeliveries = () => {
           </div>
         ) : (
           <div className="relative rounded-3xl border border-slate-800 bg-slate-900/90 p-8 text-center text-slate-300 shadow-2xl shadow-slate-950/30 sm:p-12">
-            <div className="absolute right-4 top-4 flex flex-wrap items-center justify-end gap-3 sm:right-6 sm:top-6">
-              <div className="rounded-2xl border border-slate-800 bg-slate-950/80 px-4 py-3 text-sm text-slate-200 shadow-inner">
-                Active Orders: <span className="font-semibold text-indigo-300">0</span>
-              </div>
-              <button
-                onClick={toggleStatus}
-                className="rounded-2xl border border-indigo-500/30 bg-indigo-500/15 px-4 py-2.5 text-sm font-semibold text-indigo-100 transition-all duration-200 hover:bg-indigo-500/25"
-              >
-                Go Online
-              </button>
-            </div>
+
             <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-indigo-500/10 border border-indigo-500/20">
               <ShieldCheck className="h-8 w-8 text-indigo-300" />
             </div>

@@ -112,7 +112,7 @@ export const ClientOrders = () => {
 
         <div className="grid grid-cols-1 gap-8 xl:grid-cols-[420px_1fr]">
           {/* Create Order Form */}
-          <div className="rounded-3xl border border-slate-800 bg-slate-900/80 p-6 shadow-2xl shadow-slate-950/40 backdrop-blur-xl xl:sticky xl:top-6 xl:h-fit">
+          <div className="rounded-3xl border border-slate-800 bg-slate-900/80 p-6 shadow-2xl shadow-slate-950/40 backdrop-blur-xl xl:sticky xl:top-6 xl:max-h-[calc(100vh-3rem)] overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
             <h2 className="mb-4 flex items-center gap-2 text-xl font-bold text-white">
               <Package className="w-5 h-5 text-indigo-300" />
               New Delivery
@@ -187,20 +187,7 @@ export const ClientOrders = () => {
                       </span>
                     </div>
                     
-                    <div className="mt-6 ml-2 space-y-5 border-l-2 border-slate-800/80 pl-6 relative">
-                      <div className="relative">
-                        <div className="absolute w-3.5 h-3.5 bg-indigo-500 rounded-full -left-[1.4rem] top-1 border-4 border-slate-950 shadow-[0_0_10px_rgba(99,102,241,0.6)]"></div>
-                        <p className="text-sm font-semibold text-slate-100">{order.pickupAddress}</p>
-                        <p className="text-xs font-medium text-slate-400 mt-0.5 uppercase tracking-wide">Pickup Location</p>
-                      </div>
-                      <div className="relative">
-                        <div className="absolute w-3.5 h-3.5 bg-slate-600 rounded-full -left-[1.4rem] top-1 border-4 border-slate-950"></div>
-                        <p className="text-sm font-semibold text-slate-100">{order.dropAddress}</p>
-                        <p className="text-xs font-medium text-slate-400 mt-0.5 uppercase tracking-wide">Drop Location</p>
-                      </div>
-                    </div>
-                    
-                    <OrderTracker currentStatus={order.status} failureReason={order.failureReason} failedByRiderName={order.failedByRiderName} />
+                    <OrderTracker order={order} />
 
                     {order.failureReason && order.status !== 'failed' && (
                       <div className="mt-6 p-4 bg-amber-500/10 border border-amber-500/30 rounded-xl text-xs flex gap-3 shadow-inner">
@@ -209,13 +196,6 @@ export const ClientOrders = () => {
                           <strong className="block mb-1 text-amber-300 font-semibold text-sm">Attempt by {order.failedByRiderName || 'Previous Rider'} failed: {order.failureReason}</strong>
                           <span className="text-amber-500/80">Auto-reassigned to:</span> <span className="font-bold text-amber-200">{(order.assignedRider as any)?.user?.name || 'a new rider'}</span>.
                         </div>
-                      </div>
-                    )}
-
-                    {order.assignedRider && order.status !== 'pending' && order.status !== 'failed' && (
-                      <div className="mt-10 pt-4 border-t border-slate-800/80 flex items-center justify-between">
-                        <span className="text-xs font-medium text-slate-400 uppercase tracking-wide">Assigned Rider: <strong className="text-indigo-400 ml-1">{(order.assignedRider as any).user?.name || 'Assigned'}</strong></span>
-                        {order.priority === 'urgent' && <span className="text-[10px] font-bold text-red-400 bg-red-500/10 px-2 py-1 rounded border border-red-500/20 uppercase tracking-widest shadow-[0_0_8px_rgba(239,68,68,0.2)]">URGENT</span>}
                       </div>
                     )}
                   </div>
@@ -245,67 +225,140 @@ export const ClientOrders = () => {
   );
 };
 
-const OrderTracker = ({ currentStatus, failureReason, failedByRiderName }: { currentStatus: string, failureReason?: string, failedByRiderName?: string }) => {
-  const stages = [
-    { id: 'pending', label: 'Pending' },
-    { id: 'assigned', label: 'Assigned' },
-    { id: 'picked_up', label: 'Picked Up' },
-    { id: 'delivered', label: 'Delivered' }
+const OrderTracker = ({ order }: { order: any }) => {
+  const currentStatus = order.status;
+  
+  const steps = [
+    {
+      id: 'pending',
+      title: 'Order Placed',
+      description: 'Waiting for rider assignment',
+      icon: (
+        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+      )
+    },
+    {
+      id: 'assigned',
+      title: 'Assigned to Rider',
+      description: order.assignedRider ? `Assigned to ${(order.assignedRider as any)?.user?.name || 'a rider'}` : 'Rider is being assigned',
+      icon: (
+        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+        </svg>
+      )
+    },
+    {
+      id: 'picked_up',
+      title: 'Package Picked Up',
+      description: `From: ${order.pickupAddress}`,
+      icon: (
+        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" />
+        </svg>
+      )
+    },
+    {
+      id: 'delivered',
+      title: 'Delivered',
+      description: `To: ${order.dropAddress}`,
+      icon: (
+        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+        </svg>
+      )
+    }
   ];
 
   if (currentStatus === 'failed') {
-    return (
-      <div className="mt-8 flex flex-col items-center justify-center p-5 bg-red-950/20 text-red-400 rounded-2xl border border-red-900/40 shadow-inner">
-        <div className="flex items-center mb-3">
-          <AlertCircle className="w-6 h-6 mr-2 animate-pulse text-red-500" />
-          <span className="font-bold text-base tracking-wide uppercase">Delivery Failed</span>
-        </div>
-        {failureReason && (
-          <div className="w-full text-center bg-red-950/40 py-3 px-4 rounded-xl text-sm font-medium border border-red-900/30 flex flex-col gap-1.5 mt-1 shadow-lg shadow-red-950/20">
-            {failedByRiderName && <span className="text-red-300/80">Failed by: <strong className="text-red-200">{failedByRiderName}</strong></span>}
-            <span className="text-red-300">Reason: <span className="text-red-100">{failureReason}</span></span>
-          </div>
-        )}
-      </div>
-    );
+    steps[3] = {
+      id: 'failed',
+      title: 'Delivery Failed',
+      description: order.failureReason ? `Reason: ${order.failureReason}` : 'Delivery was cancelled or failed',
+      icon: (
+        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+        </svg>
+      )
+    };
   }
-
-  // Handle case where status doesn't exactly match timeline (shouldn't happen)
-  let currentIndex = stages.findIndex(s => s.id === currentStatus);
+  
+  let currentIndex = steps.findIndex(s => s.id === currentStatus);
   if (currentIndex === -1) currentIndex = 0;
-
+  
   return (
-    <div className="mt-10 pt-8 border-t border-slate-800/80 pb-6 px-4">
-      <div className="flex justify-between items-center relative">
-        {/* Background Track */}
-        <div className="absolute left-0 right-0 top-1/2 -translate-y-1/2 h-1.5 bg-slate-800 rounded-full z-0"></div>
-        {/* Active Track */}
-        <div 
-          className="absolute left-0 top-1/2 -translate-y-1/2 h-1.5 bg-indigo-500 rounded-full z-0 transition-all duration-700 ease-out shadow-[0_0_12px_rgba(99,102,241,0.6)]"
-          style={{ width: `calc(${(currentIndex / (stages.length - 1)) * 100}%)` }}
-        ></div>
+    <div className="mt-8">
+      <div className="relative">
+        {/* Background vertical line */}
+        <div className="absolute left-[23px] top-[24px] bottom-[24px] w-0.5 bg-slate-800 rounded-full"></div>
         
-        {stages.map((stage, idx) => {
-          const isCompleted = idx <= currentIndex;
-          const isActive = idx === currentIndex;
-          
-          return (
-            <div key={stage.id} className="relative z-10 flex flex-col items-center group">
-              <div className={`w-8 h-8 rounded-full border-[3px] flex items-center justify-center transition-all duration-500 ${
-                isCompleted 
-                  ? 'border-indigo-500 bg-slate-900 shadow-[0_0_16px_rgba(99,102,241,0.5)]' 
-                  : 'border-slate-700 bg-slate-900'
-              } ${isActive ? 'ring-4 ring-indigo-500/30 scale-110' : ''}`}>
-                {isCompleted && <div className="w-3 h-3 bg-indigo-500 rounded-full animate-[pulse_2s_ease-in-out_infinite]"></div>}
+        <div className="space-y-6">
+          {steps.map((step, idx) => {
+            const timelineStep = order.timeline?.find((t: any) => t.status === step.id);
+            const isCompleted = idx < currentIndex || (idx === currentIndex && (currentStatus === 'delivered' || currentStatus === 'failed'));
+            const isCurrent = idx === currentIndex && currentStatus !== 'delivered' && currentStatus !== 'failed';
+            
+            // Generate styles explicitly for tailwind
+            let circleStyle = "border-slate-800 bg-slate-900 text-slate-600";
+            if (isCurrent) {
+              circleStyle = "border-indigo-500/30 bg-indigo-500 text-white shadow-[0_0_15px_rgba(99,102,241,0.5)]";
+            } else if (isCompleted) {
+              if (step.id === 'failed') {
+                circleStyle = "border-slate-900 bg-red-500 text-white shadow-[0_0_15px_rgba(239,68,68,0.3)]";
+              } else if (step.id === 'delivered') {
+                circleStyle = "border-slate-900 bg-emerald-500 text-white shadow-[0_0_15px_rgba(16,185,129,0.3)]";
+              } else {
+                circleStyle = "border-slate-900 bg-emerald-500 text-white";
+              }
+            }
+
+            return (
+              <div key={step.id} className="relative z-10 flex gap-5">
+                <div className={`w-12 h-12 rounded-full border-4 flex items-center justify-center shrink-0 transition-all duration-300 ${circleStyle}`}>
+                   {step.icon}
+                </div>
+                
+                <div className="flex-1 pb-1 pt-1">
+                   <div className="flex justify-between items-start">
+                     <h4 className={`text-base font-bold ${isCurrent || isCompleted ? (step.id === 'failed' ? 'text-red-400' : 'text-slate-100') : 'text-slate-500'}`}>
+                       {step.title}
+                     </h4>
+                     
+                     {isCompleted && step.id !== 'failed' && (
+                       <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-[10px] font-bold tracking-wide">
+                         ✓ Done
+                       </span>
+                     )}
+                     {isCurrent && (
+                       <span className="px-2.5 py-0.5 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 text-[10px] font-bold tracking-wide">
+                         Current
+                       </span>
+                     )}
+                     {step.id === 'failed' && isCompleted && (
+                       <span className="px-2.5 py-0.5 rounded-full bg-red-500/10 border border-red-500/20 text-red-400 text-[10px] font-bold tracking-wide">
+                         Failed
+                       </span>
+                     )}
+                   </div>
+                   
+                   <p className={`text-sm mt-0.5 ${isCurrent || isCompleted ? 'text-slate-300' : 'text-slate-600'}`}>
+                     {step.description}
+                   </p>
+                   
+                   {timelineStep && (
+                     <p className="text-[10px] font-semibold text-slate-500 mt-1 uppercase tracking-wider">
+                       {new Date(timelineStep.timestamp).toLocaleString(undefined, {
+                         day: '2-digit', month: 'short', year: 'numeric',
+                         hour: '2-digit', minute: '2-digit', second: '2-digit'
+                       })}
+                     </p>
+                   )}
+                </div>
               </div>
-              <span className={`text-[10px] sm:text-xs font-bold uppercase tracking-widest absolute -bottom-8 whitespace-nowrap transition-colors duration-300 ${
-                isActive ? 'text-indigo-400 drop-shadow-[0_0_10px_rgba(99,102,241,0.8)]' : isCompleted ? 'text-slate-300' : 'text-slate-600'
-              }`}>
-                {stage.label}
-              </span>
-            </div>
-          );
-        })}
+            )
+          })}
+        </div>
       </div>
     </div>
   );
