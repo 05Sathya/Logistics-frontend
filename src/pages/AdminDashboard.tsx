@@ -22,6 +22,8 @@ import {
   TrendingUp,
   Truck,
   Download,
+  Menu,
+  X,
 } from 'lucide-react';
 import {
   BarChart,
@@ -62,6 +64,7 @@ export const AdminDashboard: React.FC = () => {
   const [page, setPage] = useState<number>(1);
 
   const [activeTab, setActiveTab] = useState<'dashboard' | 'clients' | 'riders'>('dashboard');
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   useEffect(() => {
     loadData();
@@ -270,16 +273,22 @@ export const AdminDashboard: React.FC = () => {
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans">
       {/* Navbar Header */}
-      <header className="bg-slate-900/60 backdrop-blur-xl border-b border-slate-800/80 sticky top-0 z-40 px-6 py-4 flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="p-2 bg-indigo-600 rounded-xl shadow-lg shadow-indigo-600/30">
-            <Truck className="w-6 h-6 text-white" />
+      <header className="bg-slate-900/60 backdrop-blur-xl border-b border-slate-800/80 sticky top-0 z-40 px-4 md:px-6 py-4 flex items-center justify-between">
+        <div className="flex items-center gap-2 md:gap-3">
+          <button
+            onClick={() => setIsSidebarOpen(true)}
+            className="md:hidden p-2 text-slate-400 hover:text-slate-200 hover:bg-slate-800 rounded-xl transition-all"
+          >
+            <Menu className="w-5 h-5 sm:w-6 sm:h-6" />
+          </button>
+          <div className="p-2 bg-indigo-600 rounded-xl shadow-lg shadow-indigo-600/30 hidden sm:block">
+            <Truck className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
           </div>
           <div>
-            <h1 className="text-lg font-bold bg-clip-text text-transparent bg-gradient-to-r from-slate-100 to-slate-300">
+            <h1 className="text-base md:text-lg font-bold bg-clip-text text-transparent bg-gradient-to-r from-slate-100 to-slate-300">
               Logistics
             </h1>
-            <p className="text-slate-400 text-xs font-semibold">Live Admin Dashboard</p>
+            <p className="text-slate-400 text-[10px] md:text-xs font-semibold">Live Admin Dashboard</p>
           </div>
         </div>
 
@@ -308,12 +317,35 @@ export const AdminDashboard: React.FC = () => {
         </div>
       </header>
 
-      <div className="flex flex-1 overflow-hidden">
+      <div className="flex flex-1 overflow-hidden relative">
+        {/* Mobile Sidebar Overlay */}
+        {isSidebarOpen && (
+          <div 
+            className="fixed inset-0 bg-slate-950/60 backdrop-blur-sm z-40 md:hidden"
+            onClick={() => setIsSidebarOpen(false)}
+          />
+        )}
+
         {/* Sidebar */}
-        <aside className="w-64 bg-slate-900/60 border-r border-slate-800/80 p-6 flex flex-col gap-2 overflow-y-auto shrink-0">
-          <p className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Menu</p>
+        <aside 
+          className={`fixed md:relative inset-y-0 left-0 z-50 w-64 bg-slate-900 md:bg-slate-900/60 border-r border-slate-800/80 p-6 flex flex-col gap-2 overflow-y-auto shrink-0 transition-transform duration-300 ease-in-out md:translate-x-0 ${
+            isSidebarOpen ? 'translate-x-0' : '-translate-x-full'
+          }`}
+        >
+          <div className="flex items-center justify-between mb-2 md:mb-0">
+            <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">Menu</p>
+            <button 
+              onClick={() => setIsSidebarOpen(false)}
+              className="md:hidden p-1 text-slate-400 hover:text-slate-200"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
           <button
-            onClick={() => setActiveTab('dashboard')}
+            onClick={() => {
+              setActiveTab('dashboard');
+              setIsSidebarOpen(false);
+            }}
             className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold transition-all ${
               activeTab === 'dashboard'
                 ? 'bg-indigo-500/20 text-indigo-400 border border-indigo-500/30'
@@ -324,7 +356,10 @@ export const AdminDashboard: React.FC = () => {
             Dashboard
           </button>
           <button
-            onClick={() => setActiveTab('clients')}
+            onClick={() => {
+              setActiveTab('clients');
+              setIsSidebarOpen(false);
+            }}
             className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold transition-all ${
               activeTab === 'clients'
                 ? 'bg-indigo-500/20 text-indigo-400 border border-indigo-500/30'
@@ -335,7 +370,10 @@ export const AdminDashboard: React.FC = () => {
             Clients
           </button>
           <button
-            onClick={() => setActiveTab('riders')}
+            onClick={() => {
+              setActiveTab('riders');
+              setIsSidebarOpen(false);
+            }}
             className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold transition-all ${
               activeTab === 'riders'
                 ? 'bg-indigo-500/20 text-indigo-400 border border-indigo-500/30'
@@ -348,7 +386,7 @@ export const AdminDashboard: React.FC = () => {
         </aside>
 
         {/* Main Panel Content */}
-        <main className="flex-1 p-6 space-y-6 overflow-y-auto w-full">
+        <main className="flex-1 p-4 md:p-6 space-y-4 md:space-y-6 overflow-y-auto w-full">
           {activeTab === 'dashboard' && (
             <>
               {/* Real-time statistics summary */}

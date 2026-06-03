@@ -91,7 +91,7 @@ export const Login: React.FC = () => {
       <div className="absolute top-[-10%] left-[-10%] w-96 h-96 bg-indigo-900/40 rounded-full blur-[100px] animate-pulse"></div>
       <div className="absolute bottom-[-10%] right-[-10%] w-96 h-96 bg-emerald-900/40 rounded-full blur-[100px] animate-pulse" style={{ animationDelay: '2s' }}></div>
 
-      <div className="bg-slate-900/90 border border-slate-800 shadow-2xl rounded-3xl max-w-md w-full p-8 relative z-10 backdrop-blur-xl">
+      <div className="bg-slate-900/90 border border-slate-800 shadow-2xl rounded-3xl max-w-md w-full p-6 sm:p-8 relative z-10 backdrop-blur-xl">
         <div className="flex flex-col items-center mb-6">
           <div className="bg-indigo-600/10 p-3 rounded-full mb-3 border border-indigo-500/20">
             <Truck className="w-8 h-8 text-indigo-500" />

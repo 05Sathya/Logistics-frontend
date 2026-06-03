@@ -76,14 +76,14 @@ export const RiderDeliveries = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[linear-gradient(135deg,#0f172a_0%,#111827_45%,#1f2937_100%)] p-4 sm:p-6 lg:p-8 text-slate-100">
-      <div className="mx-auto flex w-full max-w-6xl flex-col gap-6">
+    <div className="min-h-screen bg-[linear-gradient(135deg,#0f172a_0%,#111827_45%,#1f2937_100%)] p-3 sm:p-6 lg:p-8 text-slate-100">
+      <div className="mx-auto flex w-full max-w-6xl flex-col gap-4 sm:gap-6">
         <header className="rounded-3xl border border-slate-800 bg-slate-900/90 p-5 shadow-2xl shadow-slate-950/30 backdrop-blur-xl sm:p-6">
           <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
             <div>
-              <p className="chip mb-3 border-slate-700 bg-slate-800 text-slate-200">Rider Portal</p>
-              <div className="flex items-center gap-3">
-                <h1 className="text-3xl font-bold tracking-tight text-white sm:text-4xl">Welcome, {user?.name || 'Rider'}</h1>
+              <p className="chip mb-3 border-slate-700 bg-slate-800 text-slate-200 inline-block px-3 py-1 rounded-full text-xs font-semibold">Rider Portal</p>
+              <div className="flex items-center gap-3 flex-wrap">
+                <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-white lg:text-4xl">Welcome, {user?.name || 'Rider'}</h1>
                 {riderOrders.length > 0 && (
                   <div className="flex items-center gap-1.5 bg-slate-800/50 px-3 py-1.5 rounded-xl border border-slate-700">
                     <Star className="w-4 h-4 text-amber-400 fill-amber-400" />
@@ -91,12 +91,12 @@ export const RiderDeliveries = () => {
                   </div>
                 )}
               </div>
-              <p className="mt-2 text-sm text-slate-300 sm:text-base">Track your active assignments, update delivery status, and stay responsive on the move.</p>
+              <p className="mt-2 text-xs sm:text-sm text-slate-300 sm:text-base">Track your active assignments, update delivery status, and stay responsive on the move.</p>
             </div>
-            <div className="flex flex-wrap items-center gap-3 self-start lg:self-auto">
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 self-stretch lg:self-auto w-full lg:w-auto">
               <button
                 onClick={toggleStatus}
-                className={`flex items-center gap-2 px-4 py-2.5 text-sm font-semibold rounded-2xl transition-all duration-200 shadow-inner border ${
+                className={`flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-semibold rounded-2xl transition-all duration-200 shadow-inner border w-full sm:w-auto ${
                   isOnline 
                     ? 'text-emerald-400 bg-emerald-500/10 hover:bg-emerald-500/20 border-emerald-500/20' 
                     : 'text-slate-400 bg-slate-800/50 hover:bg-slate-800 border-slate-700'
@@ -105,7 +105,7 @@ export const RiderDeliveries = () => {
                 <div className={`w-2 h-2 rounded-full ${isOnline ? 'bg-emerald-400 animate-pulse' : 'bg-slate-500'}`}></div>
                 {isOnline ? 'Go Offline' : 'Go Online'}
               </button>
-              <button onClick={() => setIsLogoutModalOpen(true)} className="flex items-center gap-2 px-4 py-2.5 text-sm font-semibold text-red-400 bg-red-500/10 hover:bg-red-500/20 rounded-2xl transition-colors border border-red-500/20 shadow-inner">
+              <button onClick={() => setIsLogoutModalOpen(true)} className="flex justify-center items-center gap-2 px-4 py-2.5 text-sm font-semibold text-red-400 bg-red-500/10 hover:bg-red-500/20 rounded-2xl transition-colors border border-red-500/20 shadow-inner w-full sm:w-auto">
                 <LogOut className="w-4 h-4" />
                 Logout
               </button>

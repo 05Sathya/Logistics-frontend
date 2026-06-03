@@ -97,13 +97,13 @@ export const ClientOrders = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[linear-gradient(145deg,#07111f_0%,#111827_35%,#312e81_70%,#111827_100%)] p-4 sm:p-6 lg:p-8 text-slate-100">
-      <div className="mx-auto flex w-full max-w-7xl flex-col gap-8">
-        <header className="rounded-3xl border border-slate-800 bg-slate-900/80 p-6 shadow-2xl shadow-slate-950/40 backdrop-blur-xl sm:p-8 flex justify-between items-start">
+    <div className="min-h-screen bg-[linear-gradient(145deg,#07111f_0%,#111827_35%,#312e81_70%,#111827_100%)] p-3 sm:p-6 lg:p-8 text-slate-100">
+      <div className="mx-auto flex w-full max-w-7xl flex-col gap-6 sm:gap-8">
+        <header className="rounded-3xl border border-slate-800 bg-slate-900/80 p-5 sm:p-8 shadow-2xl shadow-slate-950/40 backdrop-blur-xl flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
             <p className="mb-3 inline-flex rounded-full border border-indigo-500/30 bg-indigo-500/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-indigo-100">Client Portal</p>
-            <h1 className="text-3xl font-bold tracking-tight text-white sm:text-4xl">Welcome, {user?.name || 'Client'}</h1>
-            <p className="mt-2 max-w-2xl text-sm text-slate-300 sm:text-base">Track your progress and create new delivery requests.</p>
+            <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold tracking-tight text-white">Welcome, {user?.name || 'Client'}</h1>
+            <p className="mt-2 max-w-2xl text-xs sm:text-sm text-slate-300 sm:text-base">Track your progress and create new delivery requests.</p>
           </div>
           <button onClick={() => setIsLogoutModalOpen(true)} className="flex items-center gap-2 px-4 py-2 text-sm font-semibold text-red-400 bg-red-500/10 hover:bg-red-500/20 rounded-xl transition-colors border border-red-500/20 shadow-inner">
             <LogOut className="w-4 h-4" /> Logout
@@ -177,23 +177,25 @@ export const ClientOrders = () => {
               ) : (
                 clientOrders.map(order => (
                   <div key={order._id} className="rounded-3xl border border-slate-800 bg-slate-950/70 p-5 shadow-lg shadow-slate-950/30 transition-all duration-200 hover:-translate-y-0.5 hover:border-indigo-500/40 hover:bg-slate-950">
-                    <div className="mb-3 flex items-start justify-between gap-4">
+                    <div className="mb-4 flex flex-col sm:flex-row sm:items-start justify-between gap-3 sm:gap-4">
                       <div>
                         <span className="text-xs font-bold text-slate-400">#{order._id.substring(0,8).toUpperCase()}</span>
-                        <h3 className="font-semibold text-slate-100">{order.packageDetails}</h3>
+                        <h3 className="font-semibold text-slate-100 mt-1">{order.packageDetails}</h3>
                       </div>
-                      <span className={`rounded-full px-3 py-1 text-xs font-semibold ${getStatusColor(order.status)}`}>
-                        {order.status.replace('_', ' ').toUpperCase()}
-                      </span>
+                      <div className="shrink-0 self-start">
+                        <span className={`rounded-full px-3 py-1 text-[10px] sm:text-xs font-semibold whitespace-nowrap ${getStatusColor(order.status)}`}>
+                          {order.status.replace('_', ' ').toUpperCase()}
+                        </span>
+                      </div>
                     </div>
                     
                     <OrderTracker order={order} />
 
                     {order.failureReason && order.status !== 'failed' && (
-                      <div className="mt-6 p-4 bg-amber-500/10 border border-amber-500/30 rounded-xl text-xs flex gap-3 shadow-inner">
-                        <AlertCircle className="w-5 h-5 shrink-0 mt-0.5 text-amber-400" />
-                        <div>
-                          <strong className="block mb-1 text-amber-300 font-semibold text-sm">Attempt by {order.failedByRiderName || 'Previous Rider'} failed: {order.failureReason}</strong>
+                      <div className="mt-6 p-4 bg-amber-500/10 border border-amber-500/30 rounded-xl text-xs flex items-start gap-3 shadow-inner">
+                        <AlertCircle className="w-5 h-5 shrink-0 text-amber-400 mt-0.5" />
+                        <div className="flex-1 min-w-0">
+                          <strong className="block mb-1 text-amber-300 font-semibold text-sm break-words">Attempt by {order.failedByRiderName || 'Previous Rider'} failed: {order.failureReason}</strong>
                           <span className="text-amber-500/80">Auto-reassigned to:</span> <span className="font-bold text-amber-200">{(order.assignedRider as any)?.user?.name || 'a new rider'}</span>.
                         </div>
                       </div>
@@ -320,29 +322,31 @@ const OrderTracker = ({ order }: { order: any }) => {
                 </div>
                 
                 <div className="flex-1 pb-1 pt-1">
-                   <div className="flex justify-between items-start">
-                     <h4 className={`text-base font-bold ${isCurrent || isCompleted ? (step.id === 'failed' ? 'text-red-400' : 'text-slate-100') : 'text-slate-500'}`}>
+                   <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-1 sm:gap-2">
+                     <h4 className={`text-base font-bold break-words pr-2 ${isCurrent || isCompleted ? (step.id === 'failed' ? 'text-red-400' : 'text-slate-100') : 'text-slate-500'}`}>
                        {step.title}
                      </h4>
                      
-                     {isCompleted && step.id !== 'failed' && (
-                       <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-[10px] font-bold tracking-wide">
-                         ✓ Done
-                       </span>
-                     )}
-                     {isCurrent && (
-                       <span className="px-2.5 py-0.5 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 text-[10px] font-bold tracking-wide">
-                         Current
-                       </span>
-                     )}
-                     {step.id === 'failed' && isCompleted && (
-                       <span className="px-2.5 py-0.5 rounded-full bg-red-500/10 border border-red-500/20 text-red-400 text-[10px] font-bold tracking-wide">
-                         Failed
-                       </span>
-                     )}
+                     <div className="shrink-0 flex items-center">
+                       {isCompleted && step.id !== 'failed' && (
+                         <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-[10px] font-bold tracking-wide shrink-0">
+                           ✓ Done
+                         </span>
+                       )}
+                       {isCurrent && (
+                         <span className="px-2.5 py-0.5 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 text-[10px] font-bold tracking-wide shrink-0">
+                           Current
+                         </span>
+                       )}
+                       {step.id === 'failed' && isCompleted && (
+                         <span className="px-2.5 py-0.5 rounded-full bg-red-500/10 border border-red-500/20 text-red-400 text-[10px] font-bold tracking-wide shrink-0">
+                           Failed
+                         </span>
+                       )}
+                     </div>
                    </div>
                    
-                   <p className={`text-sm mt-0.5 ${isCurrent || isCompleted ? 'text-slate-300' : 'text-slate-600'}`}>
+                   <p className={`text-sm mt-1 sm:mt-0.5 break-words ${isCurrent || isCompleted ? 'text-slate-300' : 'text-slate-600'}`}>
                      {step.description}
                    </p>
                    
