@@ -1,6 +1,6 @@
 import { createSlice, createAsyncThunk, type PayloadAction } from '@reduxjs/toolkit';
 import { api } from '../services/api';
-import type { Order, Rider, AnalyticsSummary } from './types';
+import type { Order, Rider, AnalyticsSummary, User } from './types';
 
 interface LogisticsState {
   adminStats: AnalyticsSummary | null;
@@ -9,6 +9,7 @@ interface LogisticsState {
   adminOrdersPage: number;
   adminOrdersPages: number;
   adminRiders: Rider[];
+  adminClients: User[];
   clientOrders: Order[];
   riderOrders: Order[];
   loading: boolean;
@@ -23,6 +24,7 @@ const initialState: LogisticsState = {
   adminOrdersPage: 1,
   adminOrdersPages: 1,
   adminRiders: [],
+  adminClients: [],
   clientOrders: [],
   riderOrders: [],
   loading: false,
@@ -109,6 +111,18 @@ export const fetchAdminRiders = createAsyncThunk(
       return response.data;
     } catch (err: any) {
       return rejectWithValue(err.response?.data?.message || 'Failed to fetch admin riders');
+    }
+  }
+);
+
+export const fetchAdminClients = createAsyncThunk(
+  'logistics/fetchAdminClients',
+  async (_, { rejectWithValue }) => {
+    try {
+      const response = await api.get<User[]>('/users/clients');
+      return response.data;
+    } catch (err: any) {
+      return rejectWithValue(err.response?.data?.message || 'Failed to fetch admin clients');
     }
   }
 );
@@ -329,6 +343,11 @@ const logisticsSlice = createSlice({
       // fetchAdminRiders
       .addCase(fetchAdminRiders.fulfilled, (state, action: PayloadAction<Rider[]>) => {
         state.adminRiders = action.payload;
+      })
+
+      // fetchAdminClients
+      .addCase(fetchAdminClients.fulfilled, (state, action: PayloadAction<User[]>) => {
+        state.adminClients = action.payload;
       })
 
       // fetchAnalyticsSummary

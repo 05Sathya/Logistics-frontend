@@ -1,15 +1,27 @@
 import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
-import { Camera, MapPin, Navigation, ShieldCheck } from 'lucide-react';
+import { Camera, MapPin, Navigation, ShieldCheck, LogOut } from 'lucide-react';
 import { api } from '../services/api';
 import type { AppDispatch, RootState } from '../store/store';
 import { fetchRiderOrders, showToast } from '../store/logisticsSlice';
+import { logout } from '../store/authSlice';
+import { Modal } from '../components/Modal';
+import { Button } from '../components/Button';
 import { socketService } from '../services/socket';
 
 export const RiderDeliveries = () => {
   const dispatch = useDispatch<AppDispatch>();
+  const navigate = useNavigate();
   const { riderOrders } = useSelector((state: RootState) => state.logistics);
+  const { user } = useSelector((state: RootState) => state.auth);
   const [isOnline, setIsOnline] = useState(false);
+  const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
+
+  const handleLogout = () => {
+    dispatch(logout());
+    navigate('/login');
+  };
 
   useEffect(() => {
     if (isOnline) {
@@ -60,22 +72,13 @@ export const RiderDeliveries = () => {
           <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
             <div>
               <p className="chip mb-3 border-slate-700 bg-slate-800 text-slate-200">Rider Portal</p>
-              <h1 className="text-3xl font-bold tracking-tight text-white sm:text-4xl">My Deliveries</h1>
+              <h1 className="text-3xl font-bold tracking-tight text-white sm:text-4xl">Welcome, {user?.name || 'Rider'}</h1>
               <p className="mt-2 text-sm text-slate-300 sm:text-base">Track your active assignments, update delivery status, and stay responsive on the move.</p>
             </div>
-            <div className="flex flex-wrap items-center gap-3">
-              <div className="rounded-2xl border border-slate-800 bg-slate-950/80 px-4 py-3 text-sm text-slate-200 shadow-inner">
-                Active Orders: <span className="font-semibold text-indigo-300">{isOnline ? riderOrders.length : '0'}</span>
-              </div>
-              <button
-                onClick={toggleStatus}
-                className={`rounded-2xl px-4 py-2.5 text-sm font-semibold transition-all duration-200 ${
-                  isOnline
-                    ? 'bg-emerald-500/15 text-emerald-200 hover:bg-emerald-500/25 border border-emerald-500/30'
-                    : 'bg-indigo-500/15 text-indigo-100 hover:bg-indigo-500/25 border border-indigo-500/30'
-                }`}
-              >
-                {isOnline ? 'Go Offline' : 'Go Online'}
+            <div className="flex items-center gap-3 self-start lg:self-auto">
+              <button onClick={() => setIsLogoutModalOpen(true)} className="flex items-center gap-2 px-4 py-2.5 text-sm font-semibold text-red-400 bg-red-500/10 hover:bg-red-500/20 rounded-2xl transition-colors border border-red-500/20 shadow-inner">
+                <LogOut className="w-4 h-4" />
+                Logout
               </button>
             </div>
           </div>
@@ -94,7 +97,18 @@ export const RiderDeliveries = () => {
             )}
           </div>
         ) : (
-          <div className="rounded-3xl border border-slate-800 bg-slate-900/90 p-8 text-center text-slate-300 shadow-2xl shadow-slate-950/30 sm:p-12">
+          <div className="relative rounded-3xl border border-slate-800 bg-slate-900/90 p-8 text-center text-slate-300 shadow-2xl shadow-slate-950/30 sm:p-12">
+            <div className="absolute right-4 top-4 flex flex-wrap items-center justify-end gap-3 sm:right-6 sm:top-6">
+              <div className="rounded-2xl border border-slate-800 bg-slate-950/80 px-4 py-3 text-sm text-slate-200 shadow-inner">
+                Active Orders: <span className="font-semibold text-indigo-300">0</span>
+              </div>
+              <button
+                onClick={toggleStatus}
+                className="rounded-2xl border border-indigo-500/30 bg-indigo-500/15 px-4 py-2.5 text-sm font-semibold text-indigo-100 transition-all duration-200 hover:bg-indigo-500/25"
+              >
+                Go Online
+              </button>
+            </div>
             <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-indigo-500/10 border border-indigo-500/20">
               <ShieldCheck className="h-8 w-8 text-indigo-300" />
             </div>
@@ -103,6 +117,22 @@ export const RiderDeliveries = () => {
           </div>
         )}
       </div>
+
+      <Modal
+        isOpen={isLogoutModalOpen}
+        onClose={() => setIsLogoutModalOpen(false)}
+        title="Confirm Logout"
+        footer={
+          <>
+            <Button variant="outline" onClick={() => setIsLogoutModalOpen(false)}>Cancel</Button>
+            <Button variant="danger" onClick={handleLogout}>Confirm Logout</Button>
+          </>
+        }
+      >
+        <div className="space-y-3">
+          <p className="text-sm text-slate-600">Are you sure you want to securely log out of your session?</p>
+        </div>
+      </Modal>
     </div>
   );
 };

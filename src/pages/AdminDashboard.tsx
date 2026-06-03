@@ -6,6 +6,7 @@ import { logout } from '../store/authSlice';
 import {
   fetchAdminOrders,
   fetchAdminRiders,
+  fetchAdminClients,
   fetchAnalyticsSummary,
   updateRiderStatus,
 } from '../store/logisticsSlice';
@@ -20,6 +21,7 @@ import {
   RefreshCw,
   TrendingUp,
   Truck,
+  Download,
 } from 'lucide-react';
 import {
   BarChart,
@@ -35,6 +37,7 @@ import { Modal } from '../components/Modal';
 import { Button } from '../components/Button';
 import { socketService } from '../services/socket';
 import type { Order, Rider } from '../store/types';
+import * as XLSX from 'xlsx';
 
 export const AdminDashboard: React.FC = () => {
   const dispatch = useDispatch<AppDispatch>();
@@ -46,6 +49,7 @@ export const AdminDashboard: React.FC = () => {
     adminStats,
     adminOrders,
     adminRiders,
+    adminClients,
     loading,
   } = useSelector((state: RootState) => state.logistics);
 
@@ -56,6 +60,8 @@ export const AdminDashboard: React.FC = () => {
   const [filterPriority, setFilterPriority] = useState<string>('');
   const [filterZone, setFilterZone] = useState<string>('');
   const [page, setPage] = useState<number>(1);
+
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'clients' | 'riders'>('dashboard');
 
   useEffect(() => {
     loadData();
@@ -87,6 +93,7 @@ export const AdminDashboard: React.FC = () => {
   const loadData = () => {
     dispatch(fetchAnalyticsSummary());
     dispatch(fetchAdminRiders());
+    dispatch(fetchAdminClients());
     dispatch(fetchAdminOrders({ status: filterStatus, priority: filterPriority, zone: filterZone, page }));
   };
 
@@ -142,6 +149,84 @@ export const AdminDashboard: React.FC = () => {
     success: z.successRate,
   })) || [];
 
+  // Clients computation combining registered clients and local order stats
+  const clientsData = adminClients.map(client => {
+    let totalOrders = 0;
+    let deliveredOrders = 0;
+    let failedOrders = 0;
+
+    adminOrders.forEach(o => {
+      if (o.client && o.client._id === client.id || o.client && o.client._id === (client as any)._id) {
+        totalOrders++;
+        if (o.status === 'delivered') deliveredOrders++;
+        if (o.status === 'failed') failedOrders++;
+      }
+    });
+
+    return {
+      _id: client.id || (client as any)._id,
+      name: client.name,
+      email: client.email,
+      totalOrders,
+      deliveredOrders,
+      failedOrders
+    };
+  });
+
+  const exportClientsToExcel = () => {
+    const wsData = clientsData.map(c => ({
+      'Client Name': c.name,
+      'Email Address': c.email,
+      'Total Orders': c.totalOrders,
+      'Delivered': c.deliveredOrders,
+      'Failed': c.failedOrders
+    }));
+    
+    const ws = XLSX.utils.json_to_sheet(wsData);
+    
+    // Set column widths for proper alignment
+    ws['!cols'] = [
+      { wch: 25 }, // Client Name
+      { wch: 35 }, // Email Address
+      { wch: 15 }, // Total Orders
+      { wch: 15 }, // Delivered
+      { wch: 15 }, // Failed
+    ];
+    
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Clients Report");
+    XLSX.writeFile(wb, "Clients_Report.xlsx");
+  };
+
+  const exportRidersToExcel = () => {
+    const wsData = adminRiders.map(r => ({
+      'Rider Name': r.user?.name || 'Unknown',
+      'Email Address': r.user?.email || 'Unknown',
+      'Status': r.status.toUpperCase(),
+      'Active Orders': r.activeOrders,
+      'Total Delivered': r.totalDelivered,
+      'Total Failed': r.totalFailed,
+      'Avg Delivery Time (m)': r.avgDeliveryTime
+    }));
+    
+    const ws = XLSX.utils.json_to_sheet(wsData);
+    
+    // Set column widths for proper alignment
+    ws['!cols'] = [
+      { wch: 25 }, // Rider Name
+      { wch: 35 }, // Email Address
+      { wch: 15 }, // Status
+      { wch: 15 }, // Active Orders
+      { wch: 15 }, // Total Delivered
+      { wch: 15 }, // Total Failed
+      { wch: 25 }, // Avg Delivery Time
+    ];
+    
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Riders Report");
+    XLSX.writeFile(wb, "Riders_Report.xlsx");
+  };
+
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans">
       {/* Navbar Header */}
@@ -152,7 +237,7 @@ export const AdminDashboard: React.FC = () => {
           </div>
           <div>
             <h1 className="text-lg font-bold bg-clip-text text-transparent bg-gradient-to-r from-slate-100 to-slate-300">
-              Antigravity Logistics
+              Logistics
             </h1>
             <p className="text-slate-400 text-xs font-semibold">Live Admin Dashboard</p>
           </div>
@@ -183,9 +268,50 @@ export const AdminDashboard: React.FC = () => {
         </div>
       </header>
 
-      {/* Main Panel Content */}
-      <main className="flex-1 p-6 space-y-6 max-w-7xl w-full mx-auto">
-        {/* Real-time statistics summary */}
+      <div className="flex flex-1 overflow-hidden">
+        {/* Sidebar */}
+        <aside className="w-64 bg-slate-900/60 border-r border-slate-800/80 p-6 flex flex-col gap-2 overflow-y-auto shrink-0">
+          <p className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Menu</p>
+          <button
+            onClick={() => setActiveTab('dashboard')}
+            className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold transition-all ${
+              activeTab === 'dashboard'
+                ? 'bg-indigo-500/20 text-indigo-400 border border-indigo-500/30'
+                : 'text-slate-400 hover:bg-slate-800/50 hover:text-slate-200'
+            }`}
+          >
+            <Activity className="w-5 h-5" />
+            Dashboard
+          </button>
+          <button
+            onClick={() => setActiveTab('clients')}
+            className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold transition-all ${
+              activeTab === 'clients'
+                ? 'bg-indigo-500/20 text-indigo-400 border border-indigo-500/30'
+                : 'text-slate-400 hover:bg-slate-800/50 hover:text-slate-200'
+            }`}
+          >
+            <Users className="w-5 h-5" />
+            Clients
+          </button>
+          <button
+            onClick={() => setActiveTab('riders')}
+            className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold transition-all ${
+              activeTab === 'riders'
+                ? 'bg-indigo-500/20 text-indigo-400 border border-indigo-500/30'
+                : 'text-slate-400 hover:bg-slate-800/50 hover:text-slate-200'
+            }`}
+          >
+            <Truck className="w-5 h-5" />
+            Riders
+          </button>
+        </aside>
+
+        {/* Main Panel Content */}
+        <main className="flex-1 p-6 space-y-6 overflow-y-auto w-full">
+          {activeTab === 'dashboard' && (
+            <>
+              {/* Real-time statistics summary */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {[
             {
@@ -584,7 +710,123 @@ export const AdminDashboard: React.FC = () => {
             </div>
           </div>
         </div>
-      </main>
+            </>
+          )}
+
+          {activeTab === 'clients' && (
+            <div className="bg-slate-900/40 border border-slate-800/80 rounded-2xl p-6">
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-lg font-bold text-slate-100 flex items-center gap-2">
+                  <Users className="w-5 h-5 text-indigo-500" />
+                  Client Directory
+                </h2>
+                <button onClick={exportClientsToExcel} className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2 rounded-xl text-sm font-semibold transition-colors shadow-[0_0_12px_rgba(99,102,241,0.3)] border border-indigo-500/50">
+                  <Download className="w-4 h-4" /> Export Report
+                </button>
+              </div>
+              {clientsData.length === 0 ? (
+                <div className="py-12 text-center text-slate-500">
+                  <p className="text-sm font-semibold">No Client Data</p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {clientsData.map((client) => (
+                    <div key={client._id} className="p-4 bg-slate-950/40 rounded-xl border border-slate-800/60 flex flex-col gap-2">
+                      <p className="text-sm font-bold text-slate-200">{client.name}</p>
+                      <p className="text-xs text-slate-400">{client.email}</p>
+                      <div className="mt-2 grid grid-cols-3 gap-2">
+                        <div className="bg-slate-900 p-2 rounded-lg text-center">
+                          <p className="text-[10px] text-slate-500 font-bold uppercase">Total</p>
+                          <p className="text-sm font-bold text-slate-300">{client.totalOrders}</p>
+                        </div>
+                        <div className="bg-emerald-950/20 p-2 rounded-lg text-center border border-emerald-900/30">
+                          <p className="text-[10px] text-emerald-500 font-bold uppercase">Done</p>
+                          <p className="text-sm font-bold text-emerald-400">{client.deliveredOrders}</p>
+                        </div>
+                        <div className="bg-red-950/20 p-2 rounded-lg text-center border border-red-900/30">
+                          <p className="text-[10px] text-red-500 font-bold uppercase">Failed</p>
+                          <p className="text-sm font-bold text-red-400">{client.failedOrders}</p>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          {activeTab === 'riders' && (
+            <div className="bg-slate-900/40 border border-slate-800/80 rounded-2xl p-6">
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-lg font-bold text-slate-100 flex items-center gap-2">
+                  <Truck className="w-5 h-5 text-indigo-500" />
+                  Rider Directory
+                </h2>
+                <button onClick={exportRidersToExcel} className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2 rounded-xl text-sm font-semibold transition-colors shadow-[0_0_12px_rgba(99,102,241,0.3)] border border-indigo-500/50">
+                  <Download className="w-4 h-4" /> Export Report
+                </button>
+              </div>
+              {adminRiders.length === 0 ? (
+                <div className="py-12 text-center text-slate-500">
+                  <p className="text-sm font-semibold">No Rider Data</p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {adminRiders.map((rider) => {
+                    const isOffline = rider.status === 'offline';
+                    const isBusy = rider.activeOrders > 0;
+                    const displayStatus = isOffline ? 'offline' : isBusy ? 'busy' : 'available';
+                    const dotColor = getRiderStatusDotColor(displayStatus);
+
+                    return (
+                      <div key={rider._id} className="p-4 bg-slate-950/40 rounded-xl border border-slate-800/60 flex flex-col gap-3">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-3">
+                            <span className={`w-2.5 h-2.5 rounded-full ${dotColor}`}></span>
+                            <div>
+                              <p className="text-sm font-bold text-slate-200">{rider.user?.name || 'Rider'}</p>
+                              <p className="text-[10px] text-slate-400 font-bold uppercase">{displayStatus}</p>
+                            </div>
+                          </div>
+                          <button
+                            onClick={() => handleRiderToggle(rider)}
+                            className={`text-[10px] font-bold px-3 py-1.5 rounded-lg border transition-all ${
+                              isOffline
+                                ? 'bg-emerald-950/40 hover:bg-emerald-900/40 border-emerald-500/20 text-emerald-400'
+                                : 'bg-slate-900 hover:bg-slate-800 border-slate-800 text-slate-300'
+                            }`}
+                          >
+                            {isOffline ? 'Go Online' : 'Set Offline'}
+                          </button>
+                        </div>
+                        
+                        <div className="grid grid-cols-2 gap-2 mt-2">
+                          <div className="bg-slate-900 p-2 rounded-lg text-center">
+                            <p className="text-[10px] text-slate-500 font-bold uppercase">Active</p>
+                            <p className="text-sm font-bold text-indigo-400">{rider.activeOrders}</p>
+                          </div>
+                          <div className="bg-slate-900 p-2 rounded-lg text-center">
+                            <p className="text-[10px] text-slate-500 font-bold uppercase">Avg Time</p>
+                            <p className="text-sm font-bold text-amber-400">{rider.avgDeliveryTime}m</p>
+                          </div>
+                          <div className="bg-emerald-950/20 p-2 rounded-lg text-center border border-emerald-900/30">
+                            <p className="text-[10px] text-emerald-500 font-bold uppercase">Delivered</p>
+                            <p className="text-sm font-bold text-emerald-400">{rider.totalDelivered}</p>
+                          </div>
+                          <div className="bg-red-950/20 p-2 rounded-lg text-center border border-red-900/30">
+                            <p className="text-[10px] text-red-500 font-bold uppercase">Failed</p>
+                            <p className="text-sm font-bold text-red-400">{rider.totalFailed}</p>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          )}
+        </main>
+      </div>
 
       {/* Confirmation Modal for toggling rider offline with active orders */}
       <Modal
